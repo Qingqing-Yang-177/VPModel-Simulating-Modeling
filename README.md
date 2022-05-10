@@ -11,7 +11,7 @@ I created this repository as the result of my simulation and modeling of the var
 - **simulate&model_QY.m:** the codes for simulation and modeling practice
   - Simulate data from evenly allocation VP model parameters, with diff params combinations.
   - Simulate from proportional allocation VP model parameters, with fixed Jbar or fixed tau.
-  - Fit real data with negative Log Likelihood.
+  - Fit real data with negative Log Likelihood calculation.
   - Recover the parameter combination (theta2) from the simulated data (theta1)
 - **Proportional_VP_single_simulator_QY:** the function for simulate a error data by Proportional VP model with a params combination [Jbar, tau] 
 - **Proportional_calc_nll_QY.m:** **（revision needed）** the function for calculate the neg log-likelihood based on a data and Propor_VP model with a params combination [Jbar, tau], works for 1 by 3 cells while not 1 by 1 cell.
