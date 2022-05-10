@@ -7,7 +7,7 @@ I created this repository as the result of my simulation and modeling of the var
 
 My contributions are:
 - **qy_modelling results** contains results of my model simulation, parameter recovery, model comparison
-- **simulate&model_QY.m** the codes that I made for 
+- **simulate&model_QY.m** the codes that I made for simulation and modeling practice
 
 A brief description of the orginal repository organization (details are found within each file):
 - **data/priority:** contains data for the first and second experiment. 
