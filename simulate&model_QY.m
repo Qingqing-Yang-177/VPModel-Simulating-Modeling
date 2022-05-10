@@ -149,13 +149,13 @@ end
 % model parameters
 Jbar_total = 10;
 
-% when fixed tau, changing Jbar
-taus = [0.5 0.5 0.5]
-allocationVec = [0.6 0.3 0.1]; 
+% % when fixed tau, changing Jbar
+% taus = [0.5 0.5 0.5]
+% allocationVec = [0.6 0.3 0.1]; 
 
 % when fixed the priority, changing taus
-% taus = [2 0.8 0.3];
-% allocationVec = [0.33 0.33 0.33]; 
+taus = [2 0.8 0.3];
+allocationVec = [0.33 0.33 0.33]; 
 
 % draw the distributions
 xx = linspace(0,10,100);
@@ -176,13 +176,13 @@ item_rad = 5;
 item_locs = [1 1; -1 1; -1 -1; 1 -1];
 item_locs = item_locs.*item_rad;
 
-% for fixed tau, varying Jbar simulation
-nTrials = [260 160 80];
-nTrialsTotal = 500;
+% % for fixed tau, varying Jbar simulation
+% nTrials = [260 160 80];
+% nTrialsTotal = 500;
 
-% % for fixed Jbar, varying tau simulation
-% nTrials = [120 120 120];
-% nTrialsTotal = 360;
+% for fixed Jbar, varying tau simulation
+nTrials = [160 160 160];
+nTrialsTotal = 480;
 
 rng('default');
 
@@ -197,7 +197,8 @@ Theta(1)= Jbar_total;
 expPriorityVec = allocationVec;
 nPriorities = length(expPriorityVec);
 memories = cell(1,nPriorities);
-
+relative_me=[];
+error = cell(1)
 for ipriority = 1:nPriorities    % for each item...
     tau=taus(ipriority);
     Theta(2)= tau;
@@ -222,7 +223,7 @@ for ipriority = 1:nPriorities    % for each item...
         relative_me(iTrial,2*ipriority-1)= memories{1, ipriority}(iTrial,2*ipriority-1)-tar_loc(1,1);
         relative_me(iTrial,2*ipriority)= memories{1, ipriority}(iTrial,2*ipriority)-tar_loc(1,2);
         % calculate the euclidean distance of memory error
-        error{1,1}{1, ipriority}(iTrial,ipriority) = sqrt(relative_me(iTrial,2*ipriority-1).^2 +relative_me(iTrial,2*ipriority).^2);
+        error{1,1}{1, ipriority}(iTrial,1) = sqrt(relative_me(iTrial,2*ipriority-1).^2 +relative_me(iTrial,2*ipriority).^2);
     end
 end
 
@@ -253,17 +254,7 @@ ylabel('frequency')
 xlim([0,2.5])
 end
 
-%% recover the para
-data = error{1};
-allocationVec=[0.6 0.3 0.1];
-exppriorityVec=allocationVec;
-runlist = 50;                    % ignore. which idxs of total runs for current model/data
-runmax = 50;                    % ignore. number of runs per model/data
-fixparams = [];                 % fixed parameters, ignore for now
-[ML_parameters, nLLVec] = fit_parameters(model,data,exppriorityVec,runlist,runmax,fixparams);
-ML_parameters
-% 2.6847    0.0918 for fixed tau
-%% For the time sake, we could use the simulate_data.m by Yoo et al. (2018)
+%% For the time sake, for simulation, we could also use the simulate_data.m by Yoo et al. (2018)
 % which could be found in github.com/aspenyoo/WM_resource_allocation
 clear memories, 
 clear error;
@@ -285,6 +276,7 @@ for ipriority = 1:nPriorities
     plot(xlims,datacounts./sum(datacounts),'Color',colorMat(ipriority,:));
 end
 
+
 %% ====================================================================
 %  (3)Fit real data with negative Log Likelihood
 % =====================================================================
@@ -303,14 +295,14 @@ expPriorityVec = [0.6 0.3 0.1];
 fixparams = [];
 
 % calculate -LL
-nLL = calc_nLL(model,Theta,data,expPriorityVec,fixparams)
+nLL = calc_nLL(model,Theta,data,expPriorityVec,fixparams);
 % calc_nLL calculates negative LL of parameters given data and model
 % % p(J|Jbar,tau)
 % % p(Shat|S,J)
 % % \integral p(Shat|S,J) p(J) dJ
 % nLL = 0;
 % nLL = nLL - sum(log(pTrials));
-%% model fitting params
+%% model fitting params with fit_parameters.m by Yoo et al. (2018)
 model = 'proportional';             % model name
 load('exp1_cleandata.mat')
 subjnum = 5;                    % subject number
@@ -343,6 +335,37 @@ for ipriority = 1:nPriorities
     datacounts = hist(error{ipriority},xlims);
     plot(xlims,datacounts./sum(datacounts),':','Color',colorMat(ipriority,:));
 end
+
+
 %% ====================================================================
 %  (4)Recover the parameters combination from the simulated data
 % =====================================================================
+%% simulate by myself
+% simulate data with proportional VP model
+theta = [3, 0.5];
+nTrials = 200;
+single_error=Proportional_VP_single_simulator_QY(theta,nTrials);
+% return a simulated single_error{1,1} cell which is nTrials by 1 
+
+%% calculate the nLL values by myself
+theta = [3, 0.5];
+single_nll=Proportional_calc_nll_QY(theta,single_error) % this is not correct
+% something is off
+
+%% recover the params by myself
+run = 2; %number of optimizations for a given Model and Data.
+data = single_error;
+[ML_parameters,nLLVec,runlist_completed]=Proportional_fitparams_QY(data,run)
+
+% because Proportional_calc_nll_QY is not correct, this is not correct
+
+%% recover params from simulated data by fit_parameters.m from Yoo et al. (2018)
+
+model = 'proportional'; 
+data = single_error;
+exppriorityVec=[1];
+runlist = 1;                    % ignore. which idxs of total runs for current model/data
+runmax = 50;                    % ignore. number of runs per model/data
+fixparams = [];                 % fixed parameters, ignore for now
+[ML_parameters, nLLVec, runlist_completed] = fit_parameters(model,data,exppriorityVec,runlist,runmax,fixparams);
+% this is also not correct, weird
