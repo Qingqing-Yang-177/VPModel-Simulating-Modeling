@@ -3,6 +3,8 @@ function error_simulated=Proportional_VP_single_simulator_QY(Theta,nTrials)
 % allocationVec is the priorities [] for targets
 % model = 'proportional';
 
+% Qingqing Yang, qy775@nyu.edu;
+
 if nargin<=0;
     Theta = [3, 0.5]; % debug
     nTrials = 200;
@@ -30,9 +32,9 @@ end
 error_simulated=error{1}
 
 % plot the simulated data
-figure;
-xlims = linspace(0,10,18);
-datacounts = hist(error_simulated{1},xlims);
-plot(xlims,datacounts./sum(datacounts));
+% figure;
+% xlims = linspace(0,10,18);
+% datacounts = hist(error_simulated{1},xlims);
+% plot(xlims,datacounts./sum(datacounts));
 
 end % end of proportaionl simulator

@@ -2,11 +2,14 @@ function [ML_parameters, nLLVec,runlist_completed] = Proportional_fitparams_QY(d
 % Get the best fitting params with its nLL value, when fitting data to the
 % Proportional VP model
 
+% Qingqing Yang, qy775@nyu.edu;
+
 if nargin<=0;
     load('exp1_cleandata.mat')
     subjnum = 5;                    % subject number
     data = data{subjnum}; 
 end
+
 
 % lower and upper bounds, logflags
 % Jbar_total, tau search from [1e-5 1e-3] to [50 10];
@@ -15,6 +18,12 @@ ub = [50 10];
 plb = [0.5 0.01];
 pub = [10 1];
 logflag = [1 1];
+logflag = logical(logflag); 
+lb(logflag) = log(lb(logflag)); 
+ub(logflag) = log(ub(logflag)); 
+plb(logflag) = log(plb(logflag)); 
+pub(logflag) = log(pub(logflag)); 
+
 nParams = length(logflag);
 x0_list = [];
 
@@ -30,11 +39,17 @@ ML_parameters = [];
 nLLVec = [];
 runlist_completed = [];
 runlist = [];
+expPriorityVec=[1];
+
+
 for irun = 1:run
     runlist(irun)=irun;   
     rng(runlist(irun));
     x0 = x0_list(runlist(irun),:);
-    fun = @(x) Proportional_calc_nll_QY(x,data);
+%     fun = @(x) Proportional_calc_nll_QY(x,data);
+
+    fun = @(x) calc_single_nLL('proportional',x,data,expPriorityVec);
+    
     x = bads(fun,x0,lb,ub,plb,pub); 
 %   X = BADS(FUN,X0,LB,UB,PLB,PUB) starts at X0 and finds a local minimum X
 %   to the function FUN. It also specifies a set of plausible lower and

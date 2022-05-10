@@ -2,6 +2,8 @@ function single_nll = Proportional_calc_nll_QY(Theta,data)
 % calculates the negative log likelihood when fit data with the propor_VP
 % model with theta [Jbar, tau]
 
+% Qingqing Yang, qy775@nyu.edu;
+
 if nargin<=0;
     Theta = [6, 0.5]; % debug
     load('exp1_cleandata.mat')
@@ -13,7 +15,15 @@ elseif nargin <=1;
     data = data{subjnum}; 
 end
 
-Jbar = Theta(1);
+% exponentiating appropriate parameters
+logflag = [1 1];
+logflag = logical(logflag); 
+
+
+Theta(logflag) = exp(Theta(logflag));
+
+Jbar_total = Theta(1);
+Jbar = Jbar_total*1;
 tau = Theta(2);
 nLL=0;
 

@@ -1,5 +1,6 @@
-% Simulation and Modeling Practice for VP Models
-% Created by Qingqing Yang, 04/15/2022;
+%% Simulation and Modeling Practice for VP Models
+
+% Created by Qingqing Yang, qy775@nyu.edu;
 
 % The purpose of this script is to practice simulation process, and
 % evaluate the Variable precision models build by Yoo et al. (2018), based
@@ -294,7 +295,7 @@ Theta = [Jbar_total tau];
 expPriorityVec = [0.6 0.3 0.1];
 fixparams = [];
 
-% calculate -LL
+%% calculate -LL with calc_nLL.m by Yoo et al. (2018)
 nLL = calc_nLL(model,Theta,data,expPriorityVec,fixparams);
 % calc_nLL calculates negative LL of parameters given data and model
 % % p(J|Jbar,tau)
@@ -302,9 +303,23 @@ nLL = calc_nLL(model,Theta,data,expPriorityVec,fixparams);
 % % \integral p(Shat|S,J) p(J) dJ
 % nLL = 0;
 % nLL = nLL - sum(log(pTrials));
-%% model fitting params with fit_parameters.m by Yoo et al. (2018)
+
+% I wrote my own script for the data that contains only 1 target, while
+% here the data contains error data for 3 target. here, data is a 1 by 3
+% cell, with data{1,1}, data{1,2}, data{1,3} respectively represent data
+% for one target
+
+theta = [Jbar_total*expPriorityVec(1), 0.5];
+single_nll=Proportional_calc_nll_QY(theta,data) 
+% this is not correct, value is not the same, something is off
+
+expPriorityVec=[1];
+nLL2 = calc_single_nLL('proportional',theta,data,expPriorityVec)
+% I revised the calc_nLL to get calc_single_nLL, which only takes the
+% data{1,1} in and calculate the nLL.
+%% model fitting
 model = 'proportional';             % model name
-load('exp1_cleandata.mat')
+load('exp1_cleandata.mat');
 subjnum = 5;                    % subject number
 data = data{subjnum};
 exppriorityVec = [0.6 0.3 0.1];            % experimental priority vector
@@ -313,8 +328,10 @@ runmax = 20;                    % ignore. number of runs per model/data
 fixparams = [];                 % fixed parameters, ignore for now
 
 % fit parameter
-[ML_parameters, nLLVec] = fit_parameters(model,data,exppriorityVec,runlist,runmax,fixparams);
-
+[ML_parameters, nLLVec] = fit_parameters(model,data,exppriorityVec,runlist,runmax,fixparams)
+% fit_parameters.m is from Yoo et al. (2018)
+run=1;
+[ML_parameters2, nLLVec,runlist_completed]=Proportional_fitparams_QY(data,run)
 %% plotting model fits
 
 % plot data
@@ -349,23 +366,64 @@ single_error=Proportional_VP_single_simulator_QY(theta,nTrials);
 
 %% calculate the nLL values by myself
 theta = [3, 0.5];
-single_nll=Proportional_calc_nll_QY(theta,single_error) % this is not correct
+ single_nll=Proportional_calc_nll_QY(theta,single_error) % this is not correct
 % something is off
+% nll keep getting smaller as Jbar gets smaller...
 
+expPriorityVec=[1];
+ nLL = calc_single_nLL('proportional',theta,single_error,expPriorityVec)
 %% recover the params by myself
-run = 2; %number of optimizations for a given Model and Data.
+run = 1; %number of optimizations for a given Model and Data.
 data = single_error;
-[ML_parameters,nLLVec,runlist_completed]=Proportional_fitparams_QY(data,run)
+[ML_parameters,nLLVec,runlist_completed]=Proportional_fitparams_QY(data,run);
+ML_parameters=log(ML_parameters)
 
-% because Proportional_calc_nll_QY is not correct, this is not correct
+% something is wrong when i change the old fit_parameters.m, cause the
+% theta for calc_single_nLL is originally Jbartotal instead of Jbar... 
 
-%% recover params from simulated data by fit_parameters.m from Yoo et al. (2018)
+% because Proportional_calc_nll_QY is not correct, this is not correct at
+% first when i am using Proportional_calc_nll_QY.m
 
-model = 'proportional'; 
-data = single_error;
-exppriorityVec=[1];
-runlist = 1;                    % ignore. which idxs of total runs for current model/data
-runmax = 50;                    % ignore. number of runs per model/data
-fixparams = [];                 % fixed parameters, ignore for now
-[ML_parameters, nLLVec, runlist_completed] = fit_parameters(model,data,exppriorityVec,runlist,runmax,fixparams);
-% this is also not correct, weird
+% now i used calc_single_nLL.m inside Proportional_fitparams_QY.m, which
+% works better, but still something is off.
+
+%% draw a correlation matrix 
+% it takes really a long time to run
+nTrials = 200;
+run = 1;
+maxJbar=3;
+maxtau=1;
+nJbar =10;
+ntau=5;
+Jbarval=linspace(1,maxJbar,nJbar);
+tauval=linspace(1e-3,maxtau,ntau);
+theta=[];
+theta_recover=[];
+i = 1;
+iJbar=1;
+itau=1;
+for iJbar=1:length(Jbarval)
+    for itau=1:length(tauval)
+        theta(i,:) = [Jbarval(iJbar),tauval(itau)];
+        single_error=Proportional_VP_single_simulator_QY(theta(i,:),nTrials);        
+        [ML_parameters, nLLVec,runlist_completed]=Proportional_fitparams_QY(single_error,run);
+         ML_parameters=log(ML_parameters);
+        theta_recover(i,:)=ML_parameters;
+        i=i+1;
+    end
+end
+
+%% plot the theta and theta_recover
+% xlims = linspace(0,maxJbar,20); % x values for histogram
+figure; hold on;
+% theta_recover=real(theta_recover);
+plot(theta_recover(:,1),theta_recover(:,2),'k.'); hold on;
+plot(theta(:,1),theta(:,2),'ko');  
+xlabel('Jbar')
+ylabel('tau')
+axis([1 3 0 1]);
+
+%% since it looks weird and took long time to recover the param, save it.
+filename='./qy_modelling results/theta&theta2.mat';
+save(filename,'theta','theta_recover');
+
